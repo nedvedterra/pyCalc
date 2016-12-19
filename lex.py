@@ -12,6 +12,8 @@ class Lex:
     def __findToken(self, type, pattern):
         result = re.match(pattern, self.__text[self.__currentIndex:])
         if result:
+            if type == types.OTHER:
+                type = result.group()
             tk = token.Token(type, result.group(), self.__currentIndex)
             self.__currentIndex += result.end()
             return tk
@@ -28,6 +30,9 @@ class Lex:
             else:
                 raise Exception('syntax error: character %s' % self.__currentIndex,
                                 self.__text)         
+        else:
+            tk = token.Token(types.EOF, 'EOF', len(self.__text))
+            yield tk
 
     def getNextToken(self):
         return next(self.__generator)
