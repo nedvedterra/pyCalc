@@ -1,6 +1,7 @@
 from . import token
 from . import types
 from . import patterns
+from . import exceptions
 import re
 class Lex:
     def __init__(self, text = ''):
@@ -28,8 +29,9 @@ class Lex:
                         yield tk
                     break
             else:
-                raise Exception('syntax error: character %s' % self.__currentIndex,
-                                self.__text)         
+                raise exceptions.CalcError('Unexpected lexeme',
+                                              self.__currentIndex,
+                                              self.__text)         
         else:
             tk = token.Token(types.EOF, 'EOF', len(self.__text))
             yield tk

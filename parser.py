@@ -1,6 +1,7 @@
 from . import lex
 from . import types
 from . import token
+from . import exceptions
 
 import types as stdtypes
 
@@ -12,7 +13,10 @@ class Parser:
         self.__lookahead = self.__lexer.getNextToken()
         result = self.__expr()
         if self.__lookahead.type != types.EOF:
-            raise Exception('syntax error: unexpected %s' % self.__lookahead.value)
+            raise exceptions.CalcError(
+                            'Unexpected %s' % self.__lookahead.value,
+                            self.__lookahead.index,
+                            self.__lexer.text)
         else:
             return result
     def __expr(self):
@@ -55,6 +59,10 @@ class Parser:
             return self.__power()
     def __power(self):
         result = self.__atom_expr()
+        if type(result) == stdtypes.BuiltinFunctionType:
+            raise exceptions.CalcError('Function call expected',
+                                            self.__lookahead.index,
+                                            self.__lexer.text)
         if self.__lookahead.type == '^':
             self.__match('^')
             result = result ** self.__factor()
@@ -64,7 +72,11 @@ class Parser:
         while self.__lookahead.type == '(':
             self.__match('(')
             if type(result) == stdtypes.BuiltinFunctionType:
-                result = result(*self.__arglist())
+                try:
+                    result = result(*self.__arglist())
+                except TypeError as E:
+                    raise exceptions.CalcError(str(E), self.__lookahead.index,
+                                                   self.__lexer.text)
             else:
                 result = result * self.__expr()
             self.__match(')')
@@ -84,7 +96,13 @@ class Parser:
             return result
         elif self.__lookahead.type == types.IDENTIFIER:
             import math
-            result = math.__dict__[self.__lookahead.value]
+            try:
+                result = math.__dict__[self.__lookahead.value]
+            except KeyError:
+                raise exceptions.CalcError(
+                        'Expected mathematical function or constant from math module',
+                        self.__lookahead.index,
+                        self.__lexer.text)
             self.__match(types.IDENTIFIER)
             return result 
         elif self.__lookahead.type == types.INTEGER:
@@ -96,9 +114,14 @@ class Parser:
             self.__match(types.FLOAT)
             return result
         else:
-            raise Exception('syntax error: unexpected %s' % self.__lookahead.value)
+            raise exceptions.CalcError(
+                            'Unexpected %s' % self.__lookahead.value,
+                            self.__lookahead.index,
+                            self.__lexer.text)
     def __match(self, t):
         if self.__lookahead.type == t:
             self.__lookahead = self.__lexer.getNextToken()
         else:
-            raise Exception('syntax error: %s expected' % t)
+            raise exceptions.CalcError('%s expected' % t,
+                                            self.__lookahead.index,
+                                            self.__lexer.text)
