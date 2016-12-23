@@ -8,8 +8,6 @@ class Lex:
         self.__text = text 
         self.__currentIndex = 0 
         self.__generator = self.__genTokens()
-    def __iter__(self):
-        return self.__generator
     def __findToken(self, type, pattern):
         result = re.match(pattern, self.__text[self.__currentIndex:])
         if result:
@@ -38,8 +36,6 @@ class Lex:
 
     def getNextToken(self):
         return next(self.__generator)
-    def reset(self):
-        self.__init__(self.text)
     def getText(self):
         return self.__text
     def setText(self, text):

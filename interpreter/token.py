@@ -9,8 +9,6 @@ class Token:
         return self.__type
     def getIndex(self):
         return self.__index
-    def __str__(self):
-        return '%-7s|%-7s|%-7s' % (self.type, self.value, self.index)
     value = property(getData)
     type = property(getType)
     index = property(getIndex)
