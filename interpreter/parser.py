@@ -11,7 +11,15 @@ class Parser:
         self.__lookahead = None 
     def program(self):
         self.__lookahead = self.__lexer.getNextToken()
-        result = self.__expr()
+        try:
+            result = self.__expr()
+        except (TypeError, ValueError, ArithmeticError, KeyError) as E:
+            message = str(E)
+            if isinstance(E, KeyError):
+                message = 'Expected mathematical function or constant from math module'
+            raise exceptions.CalcError(message, self.__lookahead.index,
+                                       self.__lexer.text)
+
         if self.__lookahead.type != types.EOF:
             raise exceptions.CalcError(
                             'Unexpected %s' % self.__lookahead.value,
@@ -72,11 +80,7 @@ class Parser:
         while self.__lookahead.type == '(':
             self.__match('(')
             if type(result) == stdtypes.BuiltinFunctionType:
-                try:
-                    result = result(*self.__arglist())
-                except TypeError as E:
-                    raise exceptions.CalcError(str(E), self.__lookahead.index,
-                                                   self.__lexer.text)
+                result = result(*self.__arglist())
             else:
                 result = result * self.__expr()
             self.__match(')')
@@ -96,13 +100,7 @@ class Parser:
             return result
         elif self.__lookahead.type == types.IDENTIFIER:
             import math
-            try:
-                result = math.__dict__[self.__lookahead.value]
-            except KeyError:
-                raise exceptions.CalcError(
-                        'Expected mathematical function or constant from math module',
-                        self.__lookahead.index,
-                        self.__lexer.text)
+            result = math.__dict__[self.__lookahead.value]
             self.__match(types.IDENTIFIER)
             return result 
         elif self.__lookahead.type == types.INTEGER:
@@ -114,14 +112,13 @@ class Parser:
             self.__match(types.FLOAT)
             return result
         else:
-            raise exceptions.CalcError(
-                            'Unexpected %s' % self.__lookahead.value,
-                            self.__lookahead.index,
-                            self.__lexer.text)
+            raise exceptions.CalcError('Unexpected %s' % self.__lookahead.value,
+                                        self.__lookahead.index,
+                                        self.__lexer.text)
     def __match(self, t):
         if self.__lookahead.type == t:
             self.__lookahead = self.__lexer.getNextToken()
         else:
             raise exceptions.CalcError('%s expected' % t,
-                                            self.__lookahead.index,
-                                            self.__lexer.text)
+                                        self.__lookahead.index,
+                                        self.__lexer.text)
